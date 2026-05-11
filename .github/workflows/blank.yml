@@ -8,23 +8,30 @@ jobs:
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 2048
+          root-reserve-mb: 1024
           swap-size-mb: 1024
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
           remove-codeql: 'true'
+          remove-docker-images: 'true'
 
-      - name: Pull and Save Docker Image
+      - name: Download Image using Skopeo
         run: |
-          echo "开始拉取镜像..."
-          docker pull mltooling/ml-workspace-gpu:latest
-          
-          echo "镜像拉取完成，正在压缩打包 (这可能需要较长时间)..."
-          # 使用 gzip 边导出边压缩，节省空间
-          docker save mltooling/ml-workspace-gpu:latest | gzip > ml-gpu.tar.gz
-          
-          echo "打包完成，当前文件大小："
+          # 1. 安装 skopeo
+          sudo apt-get update
+          sudo apt-get install -y skopeo
+
+          # 2. 直接将镜像拉取并保存为 docker-archive 格式，并直接用 gzip 压缩
+          echo "正在通过 Skopeo 直接封包镜像 (不解压)..."
+          skopeo copy --src-tls-verify=false \
+            docker://docker.io/mltooling/ml-workspace-gpu:latest \
+            docker-archive:ml-gpu.tar:mltooling/ml-workspace-gpu:latest
+
+          echo "正在压缩文件以减小体积..."
+          gzip ml-gpu.tar
+
+          echo "打包完成，文件大小："
           du -sh ml-gpu.tar.gz
 
       - name: Upload Artifact
