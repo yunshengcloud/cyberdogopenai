@@ -8,20 +8,28 @@ jobs:
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 512
+          root-reserve-mb: 2048
           swap-size-mb: 1024
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
+          remove-codeql: 'true'
 
       - name: Pull and Save Docker Image
         run: |
+          echo "开始拉取镜像..."
           docker pull mltooling/ml-workspace-gpu:latest
-          docker save mltooling/ml-workspace-gpu:latest -o ml-gpu.tar
           
+          echo "镜像拉取完成，正在压缩打包 (这可能需要较长时间)..."
+          # 使用 gzip 边导出边压缩，节省空间
+          docker save mltooling/ml-workspace-gpu:latest | gzip > ml-gpu.tar.gz
+          
+          echo "打包完成，当前文件大小："
+          du -sh ml-gpu.tar.gz
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ml-gpu-package
-          path: ml-gpu.tar
+          path: ml-gpu.tar.gz
           retention-days: 1
