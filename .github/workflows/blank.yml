@@ -1,0 +1,27 @@
+name: Docker_Downloader
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 512
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+
+      - name: Pull and Save Docker Image
+        run: |
+          docker pull mltooling/ml-workspace-gpu:latest
+          docker save mltooling/ml-workspace-gpu:latest -o ml-gpu.tar
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ml-gpu-package
+          path: ml-gpu.tar
+          retention-days: 1
